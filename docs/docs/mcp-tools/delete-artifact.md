@@ -30,7 +30,7 @@ Stop and remove a deployed artifact. This deletes the deployment, stored source 
 
 ## What Happens
 
-1. **Deletes** the Knative Service or Kubernetes Deployment
-2. **Removes** stored source files from the storage backend
+1. **Deletes** the `VibedApp` CR (the controller's owner-reference reaps the bound `SandboxClaim`, which releases the pod back to the warm pool)
+2. **Removes** the stored source tarball from the configured source store
 3. **Removes** the artifact record from the store
-4. **Emits** a `deleted` event via the EventBus
+4. **Records** a `delete` event in the [audit trail](../configuration/audit-log.md) and emits a `deleted` event on the EventBus

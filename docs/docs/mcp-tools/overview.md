@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # MCP Tools Overview
 
-vibeD exposes MCP tools that an AI agent calls to deploy and manage apps. `deploy_artifact` runs the full v0.3.x flow: it classifies the source, creates a [`VibedApp`](../concepts/app-lifecycle.md), claims a warm sandbox, injects the source, and returns a URL.
+vibeD exposes MCP tools that an AI agent calls to deploy and manage apps. `deploy_artifact` runs the full flow: it classifies the source, creates a [`VibedApp`](../concepts/app-lifecycle.md), claims a warm sandbox, injects the source, and returns a URL.
 
 :::note Terminology
 The tool names still use "artifact" for backward compatibility, but a deploy now produces a `VibedApp` running on a sandbox — see [App lifecycle](../concepts/app-lifecycle.md). There is no separate "build" or "preview/promote" step anymore.
@@ -28,8 +28,12 @@ The tool names still use "artifact" for backward compatibility, but a deploy now
 
 User/department admin tools (`get_user`, `list_users`, `create_department`, `list_departments`) are also exposed when auth is enabled.
 
-:::caution
-Some endpoints behind these tools are not yet fully wired in v0.3.x (live log streaming, redeploy, rollback/versions, and snapshot-based suspend). The deploy → list → status → delete path is the supported core; the per-tool pages below may still describe pre-v0.3.x behavior and are being updated.
+:::tip New in v0.4.0
+- **Live log streaming**: `GET /v1/apps/{id}/logs` opens a Server-Sent Events stream (per-user concurrent cap; default 10).
+- **Redeploy in place**: `POST /v1/apps/{id}/redeploy` accepts a new tarball + optional metadata overrides.
+- **Suspend / resume**: `POST /v1/apps/{id}/suspend` releases the bound sandbox; `.../resume` re-claims and re-injects.
+- **`spec.egress.allowedHosts`** locks down outbound traffic per app — see [Egress control](../configuration/egress-control.md).
+- **Validated bring-your-own base images** — see [Custom base images](../configuration/custom-base-images.md).
 :::
 
 ## Transport

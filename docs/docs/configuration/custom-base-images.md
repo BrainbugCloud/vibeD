@@ -102,6 +102,25 @@ warmPools:
 
 A disabled slot has no warm pool, so apps the classifier routes there fail to claim. Either provide a replacement image for that slot or accept that the language is unsupported on your install.
 
+## Strict mode: close the mutable-tag window
+
+By default the validator is **fail-open during the warmup window** — a slot that hasn't been validated yet (cold start, first 2-minute cycle) is allowed through. This keeps deploys fast under normal restarts but leaves a window where a freshly re-pushed image could deploy before the validator notices.
+
+Production installs should flip the gate to strict:
+
+```yaml
+templateValidation:
+  enabled: true
+  strict: true
+```
+
+Strict mode does two extra things on every claim:
+
+1. **No result = deny.** A slot with no recorded validation result is rejected with `"template not yet validated (strict mode)"`. Deploys wait until the validator has at least run once.
+2. **Digest drift = deny.** The gate fetches the warm pod's current resolved `ImageID` (the kubelet-reported `docker-pullable://...@sha256:...`) and compares it to the digest the validator approved. A mismatch — the operator re-pushed the same tag with new content — denies with `"warm-pool pod image has changed since validation"` until the periodic validator re-checks and re-approves.
+
+`Result.ImageID` is the resolved container digest the validator captured when it probed the warm pod. It's stored in the `vibed-template-validation` ConfigMap alongside the `valid` flag, so strict mode's drift check is a constant-time read against the live pod's status.
+
 ## Turning validation off
 
 Validation is on by default. For air-gapped or fully-trusted installs you can skip the preflight (the claim path then allows every slot):

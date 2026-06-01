@@ -28,7 +28,7 @@ Roll back a deployed artifact to a previous version. This redeploys the artifact
 {
   "artifact_id": "a1b2c3d4",
   "name": "my-portfolio",
-  "url": "http://my-portfolio.default.localhost:31080",
+  "url": "http://my-portfolio.localhost",
   "target": "knative",
   "status": "running",
   "image_ref": "kind-registry:5000/vibed-artifacts/my-portfolio:v1",

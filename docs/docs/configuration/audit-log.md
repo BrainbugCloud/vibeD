@@ -15,6 +15,8 @@ Each event captures the **actor** (authenticated user ID), **action**, **target*
 | `deploy`   | a new app or redeploy (via API or MCP)         | `ok`, `denied`, `error` |
 | `delete`   | an app is deleted (via API or MCP)             | `ok`, `error`           |
 | `rollback` | an artifact is rolled back to a prior version  | `ok`, `error`           |
+| `suspend`  | `POST /v1/apps/{id}/suspend` flips suspended on| `ok`, `error`           |
+| `resume`   | `POST /v1/apps/{id}/resume` flips it off       | `ok`, `error`           |
 
 `outcome=denied` is how a [quota](./quotas.md) rejection shows up; `error` carries the failure reason in `detail`.
 
@@ -46,3 +48,20 @@ Every recorded event also increments `vibed_audit_events_total{action,outcome}` 
 :::note Egress denials
 Blocked outbound connections are logged separately by the egress proxy's authorizer (see [Egress Control](./egress-control.md)), not in this trail — they happen in a different process on the request hot path.
 :::
+
+## Fail-closed mode
+
+For compliance contexts where an **untraceable mutation is worse than an unavailable API**, flip the recorder fail-closed:
+
+```yaml
+config:
+  audit:
+    failClosed: true
+```
+
+When set:
+
+- A success-path audit write that fails (disk full, store unreachable) causes the API to return an error. The underlying action — the `VibedApp` is already created or deleted — won't be rolled back, but the caller sees the failure and knows to retry (deploys are idempotent) or alert. The Prometheus counter and the structured log line are still emitted.
+- Pre-action audit failures (e.g. failing to persist the `denied` record for a quota-rejected deploy) are intentionally **swallowed** — the original cause (the quota error) already propagates to the caller, and double-erroring would mask it.
+
+The default is `failClosed: false` so the install boots cleanly without a persistent store wired. Flip to `true` in production values alongside `store.backend: sqlite`.

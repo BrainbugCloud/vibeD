@@ -36,7 +36,7 @@ Update an existing deployed artifact with new source files. Triggers a rebuild a
 {
   "artifact_id": "a1b2c3d4",
   "name": "my-portfolio",
-  "url": "http://my-portfolio.default.localhost:31080",
+  "url": "http://my-portfolio.localhost",
   "target": "knative",
   "status": "running",
   "image_ref": "kind-registry:5000/vibed-artifacts/my-portfolio:v2",
@@ -50,6 +50,6 @@ Update an existing deployed artifact with new source files. Triggers a rebuild a
 2. **Stores** the new source tarball (replaces the previous source)
 3. **Re-injects** the new source into the app's sandbox — no rebuild
 
-:::note
-Redeploy (`POST /v1/apps/{id}/redeploy`) is not yet fully wired in v0.3.x. The supported update path is to deploy again under the same name.
+:::note REST equivalent
+The MCP tool above maps to `POST /v1/apps/{id}/redeploy` over HTTP. Both accept an optional metadata override (entrypoint, language hint, port, env vars, allowed_hosts) — fields you omit are inherited from the existing app.
 :::

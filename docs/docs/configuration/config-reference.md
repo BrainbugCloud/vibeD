@@ -71,6 +71,9 @@ runtime:
 
 networkPolicy:
   enabled: false               # vibeD-owned sandbox NetworkPolicy (prod: pair with Unmanaged)
+  dnsSelector:                 # the cluster DNS pods sandbox egress on :53 is scoped to (default CoreDNS in kube-system)
+    namespaceLabels: { kubernetes.io/metadata.name: kube-system }
+    podLabels: { k8s-app: kube-dns }
 
 controller:
   domain: vibed.example.com    # DNS suffix for app URLs
@@ -80,8 +83,33 @@ controller:
 router: { enabled: true }
 caddy:
   enabled: true
+  service:
+    type: ClusterIP            # dev flips to NodePort so kind's extraPortMappings can bridge host:80 → Caddy
+    httpNodePort: ""           # only honored when type=NodePort (e.g. 31080 in values-kind.yaml)
   tls:
     dns01: { enabled: false, provider: cloudflare, tokenSecret: "" }  # wildcard TLS in prod
+
+# --- v0.4.0 governance + lifecycle ---
+
+templateValidation:
+  enabled: true                # BYO base-image preflight (custom-base-images.md)
+  strict: false                # prod: fail-closed during warmup + reject ImageID drift
+
+egressControl:
+  enabled: false               # per-app egress allow-list (egress-control.md)
+  systemHosts: []              # always-allowed hosts (S3 source store etc.); auto-includes the served Service DNS
+  debug: false                 # dump raw helper stdin to stderr (off in production)
+
+config:
+  audit:
+    failClosed: false          # prod: reject mutating actions when the success-path audit write fails
+  quotas:
+    enabled: false             # per-owner + per-department concurrent-app caps (quotas.md)
+    maxAppsPerOwner: 0         # 0 = unlimited
+    maxAppsPerDepartment: 0
+    perDepartment: {}          # e.g. { platform: 50, contractors: 3 }
+  limits:
+    maxConcurrentLogStreamsPerUser: 10  # /v1/apps/{id}/logs SSE cap; 0 = unlimited
 
 workerd: { enabled: false, replicas: 3 }   # fast-lane V8 isolates
 

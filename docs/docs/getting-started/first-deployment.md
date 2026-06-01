@@ -67,3 +67,14 @@ curl http://localhost:8080/v1/apps
 ```
 
 `*.localhost` resolves to `127.0.0.1` in Chrome/Firefox. In Safari add an `/etc/hosts` entry for the specific label, or use Chrome. Deployed apps also appear in the dashboard at `http://localhost:8080/`.
+
+## Around the dashboard
+
+The dashboard is intentionally narrow — it's the deployed-artifact list. Two header buttons take you off the main view:
+
+- **How to connect** (text button) → `/connect` — the Claude Desktop MCP setup guide, always-expanded. The same content as [Connect Claude Desktop](#connect-claude-desktop) above, just available on every page so you can copy a config snippet without leaving the UI.
+- **⚙ Settings** (gear icon) → `/settings` — Deployment Targets (the configured runtime lanes and templates) plus, for admin users, the User and Department management panel. Non-admins see the targets only.
+
+A **theme toggle** (sun/moon pill, between the two header buttons) flips the whole dashboard between dark and light. The choice persists in `localStorage`; first-load follows your OS `prefers-color-scheme`.
+
+Deep-linking and reload work on both pages — the React app's pathname-based routing is mirrored on the server, so `http://localhost:8080/settings` (or `/connect`) returns the SPA index rather than a 404.

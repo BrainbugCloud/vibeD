@@ -31,7 +31,7 @@ Returns the full artifact object:
   "status": "running",
   "target": "knative",
   "mode": "built",
-  "url": "http://my-portfolio.default.localhost:31080",
+  "url": "http://my-portfolio.localhost",
   "image_ref": "kind-registry:5000/vibed-artifacts/my-portfolio:v1",
   "language": "static",
   "port": 80,

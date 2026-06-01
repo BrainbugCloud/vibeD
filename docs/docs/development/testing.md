@@ -23,6 +23,16 @@ make test-cleanup
 
 CI runs `go test ./... -short -count=1` on every PR and push to main.
 
+## v0.4.0 additions
+
+Three new CI surfaces landed in v0.4.0; all run on every PR:
+
+- **`race` job** (`.github/workflows/ci.yaml`) — runs `go test -race -count=1 -short ./internal/... ./pkg/...` in parallel with `build`. Catches shared-state regressions automatically (rate limiter, audit recorder, log-stream cap counter, deploy service).
+- **Chart assertion tests** (`test/helm/chart_test.go`) — run `helm template` with reference values and assert that the security-relevant knobs are still rendered: egress-proxy `securityContext` (non-root, RO root FS, drop ALL caps), Squid DNS TTL clamps, `external_acl_type %SRC %DST`, `Safe_ports` widening for served, the sandbox NetworkPolicy DNS lockdown, the `--template-validation-strict` flag wiring, `audit.failClosed`, and `maxConcurrentLogStreamsPerUser`. A chart refactor that strips any of these fails the build.
+- **MCP-driven cluster e2e** (`test/e2e/mcp_test.go`, build tag `e2ecluster`) — uses the in-repo `modelcontextprotocol/go-sdk` to open a real Streamable-HTTP session to vibeD's `/mcp`, calls `deploy_artifact` for a static site and a Python app, polls `get_artifact_status` until `Ready`, then HTTP-GETs the published URL. Exercises the exact code path Claude Desktop / Cursor / Goose take, end-to-end against a kind cluster.
+
+The e2e workflow now provisions kind via `testbed/kind-cluster/kind-config.yaml` (same config `make dev` uses, so the `host:80 → 31080` Caddy bridge and the rest of the port mappings match locally and in CI), enables `egressControl` so the egress chain is exercised, and reads `VIBED_E2E_REQUIRE=1` to **fail loudly** when a precondition isn't met instead of silently skipping. Earlier the suite could go green just by skipping every test — that's gone.
+
 ## Test Coverage Matrix
 
 ### Fully Automated (Unit Tests)

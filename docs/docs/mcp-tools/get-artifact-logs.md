@@ -30,4 +30,18 @@ Retrieve recent log lines from a deployed artifact's pods for debugging purposes
 }
 ```
 
-Logs are fetched from the running pod(s) using the Kubernetes API. For Knative services scaled to zero, the response will indicate no pods are available.
+Logs are fetched from the running sandbox container via the Kubernetes pods/log subresource. An app with no bound pod (suspended, or still claiming) returns an empty batch with `phase` set on the wrapping app.
+
+## REST: streaming variant
+
+The MCP tool returns a fixed batch. For tailing a live app, the REST endpoint exposes the same source as a **Server-Sent Events** stream:
+
+```
+GET /v1/apps/{id}/logs           Accept: text/event-stream
+```
+
+Each event is one log line. The connection stays open until the client disconnects or the pod terminates. Auth scopes the stream to the caller's apps.
+
+:::tip Per-user concurrent-stream cap
+`config.limits.maxConcurrentLogStreamsPerUser` (default `10`) blocks one caller from pinning controller memory by holding many streams open. Exceeding the cap returns `429` + a `Retry-After` header — clients should back off and retry.
+:::
