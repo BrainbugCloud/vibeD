@@ -114,18 +114,23 @@ func SkipAuthPaths(authMiddleware func(http.Handler) http.Handler) func(http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			// Skip auth for health, metrics, API docs, well-known endpoints, and frontend static assets
+			//
+			// /internal/sources/ is also skipped: the in-cluster runner agent pulls
+			// source blobs from here with no Authorization header (see
+			// runneragent/source.go), so requiring auth here makes every /inject
+			// fail with 401. It's only reachable in-cluster on :8080.
 			if path == "/healthz" || path == "/readyz" || path == "/metrics" ||
 				strings.HasPrefix(path, "/api/docs") ||
 				strings.HasPrefix(path, "/api/share/") ||
+				strings.HasPrefix(path, "/internal/sources/") ||
 				strings.HasPrefix(path, "/.well-known/") {
 				next.ServeHTTP(w, r)
 				return
 			}
-			// Protect MCP, internal /api/ endpoints, /v1/* (the OpenAPI HTTP
-			// surface), and /internal/sources/ (source blobs the in-cluster
-			// agent pulls with the shared token).
+			// Protect MCP, internal /api/ endpoints, and /v1/* (the OpenAPI HTTP
+			// surface).
 			if strings.HasPrefix(path, "/mcp") || strings.HasPrefix(path, "/api/") ||
-				strings.HasPrefix(path, "/v1/") || strings.HasPrefix(path, "/internal/sources/") {
+				strings.HasPrefix(path, "/v1/") {
 				authed.ServeHTTP(w, r)
 				return
 			}

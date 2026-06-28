@@ -163,7 +163,7 @@ function mapApp(a: ApiApp): Artifact {
 
 export async function fetchArtifacts(_status?: string, _offset = 0, _limit = 50): Promise<ArtifactListResult> {
   const res = await fetchWithTimeout(`${BASE}/v1/apps`);
-  if (!res.ok) throw new Error(`Failed to fetch apps: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch apps: ${res.statusText}`);
   const data = await res.json();
   const items: ApiApp[] = data?.items ?? [];
   const artifacts = items.map(mapApp);
@@ -172,7 +172,7 @@ export async function fetchArtifacts(_status?: string, _offset = 0, _limit = 50)
 
 export async function fetchArtifact(id: string): Promise<Artifact> {
   const res = await fetchWithTimeout(`${BASE}/v1/apps/${id}`);
-  if (!res.ok) throw new Error(`Failed to fetch app: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch app: ${res.statusText}`);
   return mapApp(await res.json());
 }
 
@@ -184,30 +184,33 @@ export async function fetchLogs(id: string): Promise<LogsResponse> {
 
 export async function deleteArtifact(id: string): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}/v1/apps/${id}`, { method: 'DELETE' });
-  if (!res.ok && res.status !== 404) throw new Error(`Failed to delete app: ${res.status} ${res.statusText}`);
+  if (!res.ok && res.status !== 404) throw new Error(`Failed to delete app: ${res.statusText}`);
 }
 
 export async function fetchTargets(): Promise<TargetInfo[]> {
   const res = await fetchWithTimeout(`${BASE}/api/targets`);
-  if (!res.ok) throw new Error(`Failed to fetch targets: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch targets: ${res.statusText}`);
   return res.json();
 }
 
 export async function fetchWhoami(): Promise<WhoAmI> {
   const res = await fetchWithTimeout(`${BASE}/api/whoami`);
-  if (!res.ok) throw new Error(`Failed to fetch user info: ${res.status} ${res.statusText}`);
+  // Check the status code directly: res.statusText is empty over HTTP/2, so
+  // the login form (which keys off "Unauthorized"/"401") would never appear.
+  if (res.status === 401) throw new Error('Unauthorized');
+  if (!res.ok) throw new Error(`Failed to fetch user info: ${res.statusText}`);
   return res.json();
 }
 
 export async function fetchOrganization(): Promise<OrganizationInfo> {
   const res = await fetchWithTimeout(`${BASE}/api/organization`);
-  if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch organization: ${res.statusText}`);
   return res.json();
 }
 
 export async function fetchVersions(id: string): Promise<ArtifactVersion[]> {
   const res = await fetchWithTimeout(`${BASE}/api/artifacts/${id}/versions`);
-  if (!res.ok) throw new Error(`Failed to fetch versions: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch versions: ${res.statusText}`);
   const data = await res.json();
   return data?.versions ?? [];
 }
@@ -218,7 +221,7 @@ export async function rollbackArtifact(id: string, version: number): Promise<voi
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ version }),
   });
-  if (!res.ok) throw new Error(`Failed to rollback artifact: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to rollback artifact: ${res.statusText}`);
 }
 
 export async function shareArtifact(id: string, userIds: string[]): Promise<void> {
@@ -227,7 +230,7 @@ export async function shareArtifact(id: string, userIds: string[]): Promise<void
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_ids: userIds }),
   });
-  if (!res.ok) throw new Error(`Failed to share artifact: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to share artifact: ${res.statusText}`);
 }
 
 export async function unshareArtifact(id: string, userIds: string[]): Promise<void> {
@@ -236,14 +239,14 @@ export async function unshareArtifact(id: string, userIds: string[]): Promise<vo
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_ids: userIds }),
   });
-  if (!res.ok) throw new Error(`Failed to unshare artifact: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to unshare artifact: ${res.statusText}`);
 }
 
 // User management (admin)
 
 export async function fetchUsers(): Promise<User[]> {
   const res = await fetchWithTimeout(`${BASE}/api/users`);
-  if (!res.ok) throw new Error(`Failed to fetch users: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch users: ${res.statusText}`);
   return res.json();
 }
 
@@ -253,13 +256,13 @@ export async function createUser(name: string, email: string, role: string): Pro
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, role }),
   });
-  if (!res.ok) throw new Error(`Failed to create user: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to create user: ${res.statusText}`);
   return res.json();
 }
 
 export async function fetchUser(id: string): Promise<User> {
   const res = await fetchWithTimeout(`${BASE}/api/users/${id}`);
-  if (!res.ok) throw new Error(`Failed to fetch user: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch user: ${res.statusText}`);
   return res.json();
 }
 
@@ -269,13 +272,13 @@ export async function updateUser(id: string, updates: { role?: string; status?: 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error(`Failed to update user: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to update user: ${res.statusText}`);
   return res.json();
 }
 
 export async function suspendUser(id: string): Promise<User> {
   const res = await fetchWithTimeout(`${BASE}/api/users/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`Failed to suspend user: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to suspend user: ${res.statusText}`);
   return res.json();
 }
 
@@ -283,7 +286,7 @@ export async function suspendUser(id: string): Promise<User> {
 
 export async function fetchDepartments(): Promise<Department[]> {
   const res = await fetchWithTimeout(`${BASE}/api/departments`);
-  if (!res.ok) throw new Error(`Failed to fetch departments: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to fetch departments: ${res.statusText}`);
   return res.json();
 }
 
@@ -293,7 +296,7 @@ export async function createDepartment(name: string): Promise<Department> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   });
-  if (!res.ok) throw new Error(`Failed to create department: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to create department: ${res.statusText}`);
   return res.json();
 }
 
@@ -303,13 +306,13 @@ export async function updateDepartment(id: string, name: string): Promise<Depart
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   });
-  if (!res.ok) throw new Error(`Failed to update department: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to update department: ${res.statusText}`);
   return res.json();
 }
 
 export async function deleteDepartment(id: string): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}/api/departments/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`Failed to delete department: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to delete department: ${res.statusText}`);
 }
 
 // Share links
@@ -335,19 +338,19 @@ export async function createShareLink(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: password || '', expires_in: expiresIn || '' }),
   });
-  if (!res.ok) throw new Error(`Failed to create share link: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to create share link: ${res.statusText}`);
   return res.json();
 }
 
 export async function listShareLinks(artifactId: string): Promise<ShareLink[]> {
   const res = await fetchWithTimeout(`${BASE}/api/artifacts/${artifactId}/share-links`);
-  if (!res.ok) throw new Error(`Failed to list share links: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to list share links: ${res.statusText}`);
   return res.json();
 }
 
 export async function revokeShareLink(token: string): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}/api/share-links/${token}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`Failed to revoke share link: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to revoke share link: ${res.statusText}`);
 }
 
 export async function resolveShareLink(
